@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>School Attendance Rollcall — Demo (Green Menu + Sticky Headers + Admin Edit)</title>
+  <style>
+    /* Modern attractive theme (purple→aqua→pink) with green menu accent */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    :root{
+      --bg1:#f0f7ff; --bg2:#f8f4ff;
+      --purple:#6C63FF; --aqua:#5AD1E5; --coral:#FF7BA9;
+      --green-1:#16a34a; --green-2:#34d399;
+      --card:#ffffff; --muted:#6b7280; --text:#0f1724;
+      --success:#2EC27E; --danger:#FF6B6B;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial; color:var(--text)}
+    body{background: linear-gradient(180deg,var(--bg1),var(--bg2)); padding:18px;}
+
+    .wrap{max-width:1150px;margin:0 auto}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    header h1{margin:0;color:var(--purple);font-size:1.4rem}
+    .top-actions button{margin-left:8px}
+
+    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(16,24,40,0.06);border:1px solid rgba(16,24,40,0.03);}
+
+    /* Login */
+    .login-wrap{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .login-left{padding:18px}
+    .tabs{display:flex;gap:8px;margin-bottom:12px}
+    .tab{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(16,24,40,0.04);text-align:center;cursor:pointer;font-weight:600;background:#fff}
+    .tab.active{background:linear-gradient(90deg,var(--purple),var(--aqua));color:#fff;border:none;box-shadow:0 8px 24px rgba(108,99,255,0.12)}
+
+    label{display:block;font-weight:600;margin-top:10px}
+    input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(16,24,40,0.06);margin-top:6px}
+    .form-row{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .form-row.col{flex-direction:column}
+
+    .btn{padding:9px 12px;border-radius:10px;border:1px solid rgba(16,24,40,0.06);cursor:pointer;font-weight:700}
+    .btn.primary{background:linear-gradient(90deg,var(--purple),var(--aqua));color:#fff;border:none}
+    .btn.ghost{background:transparent}
+    .btn.danger{background:linear-gradient(90deg,var(--danger),#ff4b4b);color:#fff;border:none}
+    .btn.small{padding:6px 10px;font-size:0.9rem}
+
+    /* App layout */
+    .app-grid{display:grid;grid-template-columns:260px 1fr;gap:16px;margin-top:16px}
+    nav.side{position:sticky;top:18px;align-self:start}
+    nav .menu{display:flex;flex-direction:column;gap:8px}
+    /* green menu: nice green gradient background for active and subtle green accents for normal */
+    nav button{
+      text-align:left;padding:12px;border-radius:10px;background:transparent;border:1px solid rgba(16,24,40,0.03);
+      color: #053f2d;
+    }
+    nav button.active{
+      background:linear-gradient(90deg,var(--green-1),var(--green-2));
+      color:#fff;border:none;box-shadow:0 8px 20px rgba(16,64,48,0.08)
+    }
+
+    .view{display:none}
+    .view.active{display:block}
+
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    thead th{
+      padding:10px;border-bottom:1px solid rgba(16,24,40,0.04);text-align:left;
+      /* sticky headers */
+      position: sticky;
+      top: 86px;   /* account for page header space (adjust if your layout changes) */
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      z-index: 5;
+    }
+    th,td{padding:10px;border-bottom:1px solid rgba(16,24,40,0.04);text-align:left}
+    tbody tr:nth-child(even){background:rgba(16,24,40,0.02)}
+
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;color:#fff;text-transform:capitalize;font-size:0.85rem}
+    .badge.present{background:linear-gradient(90deg,var(--success),#1fa862)}
+    .badge.absent{background:linear-gradient(90deg,#b91c1c,var(--danger))}
+    .badge.late{background:linear-gradient(90deg,#f59e0b,#ffb86b)}
+    .badge.left{background:linear-gradient(90deg,#64748b,#94a3b8)}
+
+    .muted{color:var(--muted);font-size:0.95rem}
+    .small{font-size:0.9rem}
+
+    /* dashboard class breakdown */
+    .class-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .class-card{flex:1;min-width:160px;padding:10px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid rgba(16,24,40,0.03)}
+    .count{font-weight:800;font-size:1.2rem;color:var(--purple)}
+
+    /* small summary cards */
+    .summary-row{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+    .summary-card{flex:1;min-width:180px;padding:12px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid rgba(16,24,40,0.03)}
+    .summary-card .label{color:var(--muted);font-size:0.95rem}
+    .summary-card .value{font-weight:800;font-size:1.1rem;margin-top:6px}
+
+    /* Rollcall highlights */
+    .rc-legend{margin-top:8px;font-size:0.9rem;color:var(--muted)}
+    .marked-flag{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(46,194,126,0.12);color:var(--success);font-weight:700;margin-left:8px;font-size:0.85rem}
+
+    /* Student photo styling */
+    .student-thumb{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid rgba(16,24,40,0.04)}
+    .student-photo-large{width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid rgba(16,24,40,0.06);display:block}
+
+    /* modal (permissions/settings/edit student) */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:60}
+    .modal{background:var(--card);padding:16px;border-radius:10px;max-width:520px;width:100%;box-shadow:0 10px 30px rgba(16,24,40,0.3)}
+    .perm-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .perm-row{display:flex;align-items:center;gap:8px}
+
+    /* responsive */
+    @media (max-width:980px){
+      .login-wrap{grid-template-columns:1fr; padding:0 6px}
+      .app-grid{grid-template-columns:1fr; }
+      nav.side{position:relative;display:flex;flex-direction:row;overflow:auto}
+      nav .menu{flex-direction:row}
+      nav button{white-space:nowrap}
+      thead th{top:56px} /* less offset on mobile */
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>School Rollcall</h1>
+      <div class="top-actions">
+        <button class="btn ghost" id="reset-demo">Reset Demo</button>
+        <button class="btn ghost" id="about">About</button>
+        <button class="btn ghost" id="settings-btn" style="display:none">Settings</button>
+      </div>
+    </header>
+
+    <!-- Login (unchanged) -->
+    <section class="card login-wrap" id="login-screen">
+      <div class="login-left">
+        <div class="tabs">
+          <div class="tab active" data-role="admin">Admin / Staff</div>
+          <div class="tab" data-role="student">Student</div>
+        </div>
+
+        <form id="login-form">
+          <label id="lbl-user">Username</label>
+          <input id="login-user" placeholder="Admins" required />
+          <label>Password / PIN</label>
+          <input id="login-pin" type="password" maxlength="10" required />
+          <div class="form-row">
+            <button type="submit" class="btn primary">Login</button>
+            <button type="button" id="btn-quick" class="btn">Demo Mode</button>
+          </div>
+          <div class="form-row small">
+            <a href="#" id="forgot-pin">Forgot PIN?</a>
+          </div>
+        </form>
+
+        <p class="muted small" style="margin-top:12px">
+          Default admin: <strong>Username</strong> = Admins &nbsp; <strong>Password</strong> = Admin123
+        </p>
+      </div>
+
+      <div class="card" style="margin:0;padding:14px;">
+        <h3 style="margin:0 0 8px 0;color:var(--purple)">Welcome</h3>
+        <p class="muted">This demo stores data in localStorage. For production, use a backend and enforce server-side permissions.</p>
+
+        <ul class="muted small" style="margin-top:10px;padding-left:18px">
+          <li>Religion codes: P=Protestant, C=Catholic, M=Muslim, BA=Born Again, O=Other.</li>
+          <li>Admin can set term duration in Settings and edit student details (except student ID).</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- App (unchanged layout) -->
+    <section id="app" style="display:none">
+      <div class="app-grid">
+        <nav class="side card">
+          <div style="margin-bottom:8px">
+            <div class="muted small">Signed in as</div>
+            <div id="who" style="font-weight:700;margin-top:6px"></div>
+          </div>
+
+          <div class="menu">
+            <button data-view="dashboard" class="nav-btn active">Dashboard</button>
+            <button data-view="rollcall" class="nav-btn">Rollcall</button>
+            <button data-view="attendance" class="nav-btn">Attendance Records</button>
+            <button data-view="students" class="nav-btn">Students</button>
+            <button data-view="users" class="nav-btn">Users</button>
+            <button id="btn-logout" class="btn ghost">Logout</button>
+          </div>
+        </nav>
+
+        <main>
+          <!-- Dashboard (unchanged content) -->
+          <section id="dashboard" class="view active card">
+            <h2 style="margin:0 0 6px 0;color:var(--purple)">Dashboard</h2>
+
+            <div class="summary-row">
+              <div class="summary-card">
+                <div class="label">Total Enrolment</div>
+                <div id="enrolment-total" class="value">0</div>
+              </div>
+
+              <div class="summary-card">
+                <div class="label">Most Regular (This Week)</div>
+                <div id="most-regular-week" class="value">—</div>
+              </div>
+
+              <div class="summary-card">
+                <div class="label">Most Regular (This Month)</div>
+                <div id="most-regular-month" class="value">—</div>
+              </div>
+
+              <div class="summary-card">
+                <div class="label">Most Regular (This Term)</div>
+                <div id="most-regular-term" class="value">—</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:160px" class="card">
+                <div class="muted small">Students</div>
+                <div id="stat-students" style="font-weight:800;font-size:1.4rem">0</div>
+              </div>
+              <div style="flex:1;min-width:160px" class="card">
+                <div class="muted small">Attendance Records</div>
+                <div id="stat-att" style="font-weight:800;font-size:1.4rem">0</div>
+              </div>
+              <div style="flex:1;min-width:160px" class="card">
+                <div class="muted small">Users</div>
+                <div id="stat-users" style="font-weight:800;font-size:1.4rem">0</div>
+              </div>
+            </div>
+
+            <h3 style="margin-top:16px">Today's Present Count by Gender (per Class)</h3>
+            <div id="class-breakdown" class="class-grid"></div>
+
+            <h3 style="margin-top:16px">Overall Present by Gender (Today)</h3>
+            <div style="display:flex;gap:10px;margin-top:8px">
+              <div class="class-card" style="min-width:120px;text-align:center">
+                <div class="muted small">Male Present</div>
+                <div id="male-present" class="count">0</div>
+              </div>
+              <div class="class-card" style="min-width:120px;text-align:center">
+                <div class="muted small">Female Present</div>
+                <div id="female-present" class="count">0</div>
+              </div>
+              <div class="class-card" style="min-width:120px;text-align:center">
+                <div class="muted small">Other Present</div>
+                <div id="other-present" class="count">0</div>
+              </div>
+            </div>
+
+            <h3 style="margin-top:16px">Recent Attendance</h3>
+            <table>
+              <thead>
+                <tr><th>Student</th><th>Status</th><th>Marked By</th><th>When</th></tr>
+              </thead>
+              <tbody id="recent-body"></tbody>
+            </table>
+
+            <div id="student-inline-section" style="margin-top:18px;display:none">
+              <h3>Your Attendance</h3>
+              <div id="student-photo-wrap" style="margin-top:8px"></div>
+              <table>
+                <thead><tr><th>Status</th><th>When</th><th>Marked By</th></tr></thead>
+                <tbody id="student-inline-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Rollcall (unchanged) -->
+          <section id="rollcall" class="view card">
+            <h2 style="margin:0 0 8px 0;color:var(--purple)">Make Rollcall</h2>
+            <div class="form-row">
+              <div style="flex:1">
+                <label>Class</label>
+                <select id="rc-class"></select>
+              </div>
+              <div style="width:140px">
+                <label>Year</label>
+                <select id="rc-year"></select>
+              </div>
+            </div>
+
+            <div style="margin-top:12px">
+              <label>Students (select multiple)</label>
+              <select id="rc-students" multiple size="8" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(16,24,40,0.06)"></select>
+              <div class="rc-legend muted small">Already rollcalled today are marked/disabled. <span class="marked-flag">Marked</span></div>
+            </div>
+
+            <div style="margin-top:12px">
+              <label>Quick Rollcall by Student Numbers (comma-separated)</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="rc-ids" placeholder="e.g. 0001,0002,0005" />
+                <button id="mark-ids-btn" class="btn primary small" title="Mark by numbers">Mark by IDs</button>
+                <div class="muted small" style="margin-left:auto">You may also select students above</div>
+              </div>
+              <div id="rc-ids-msg" class="muted small" style="margin-top:8px"></div>
+            </div>
+
+            <div class="form-row" style="margin-top:12px">
+              <div style="flex:1">
+                <label>Status</label>
+                <select id="rc-status">
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="late">Late</option>
+                  <option value="left">Left</option>
+                </select>
+              </div>
+              <div style="display:flex;align-items:flex-end">
+                <button id="mark-btn" class="btn primary">Mark Selected</button>
+              </div>
+            </div>
+
+            <div id="rc-msg" class="muted small" style="margin-top:10px"></div>
+          </section>
+
+          <!-- Attendance Records (unchanged) -->
+          <section id="attendance" class="view card">
+            <h2 style="margin:0 0 8px 0;color:var(--purple)">Attendance Records</h2>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="flex:1;min-width:220px">
+                <label>Filter Student</label>
+                <select id="filter-stu"><option value="">All students</option></select>
+              </div>
+              <div style="min-width:160px">
+                <label>From</label>
+                <input id="filter-from" type="date" />
+              </div>
+              <div style="min-width:160px">
+                <label>To</label>
+                <input id="filter-to" type="date" />
+              </div>
+              <div style="align-self:end">
+                <button id="filter-btn" class="btn">Filter</button>
+                <button id="clear-filter" class="btn ghost">Clear</button>
+              </div>
+            </div>
+
+            <table>
+              <thead><tr><th>Student</th><th>Status</th><th>By</th><th>When</th></tr></thead>
+              <tbody id="att-body"></tbody>
+            </table>
+          </section>
+
+          <!-- Students: admin can edit details (except student ID) -->
+          <section id="students" class="view card">
+            <h2 style="margin:0 0 8px 0;color:var(--purple)">Students</h2>
+
+            <form id="reg-form">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="flex:1;min-width:140px">
+                  <label>First Name</label>
+                  <input id="stu-first" required />
+                </div>
+                <div style="flex:1;min-width:140px">
+                  <label>Last Name</label>
+                  <input id="stu-last" required />
+                </div>
+                <div style="width:140px">
+                  <label>Gender</label>
+                  <select id="stu-gender">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div style="width:140px">
+                  <label>Class</label>
+                  <select id="stu-class"></select>
+                </div>
+                <div style="width:140px">
+                  <label>Year</label>
+                  <select id="stu-year"></select>
+                </div>
+
+                <div style="width:180px">
+                  <label>Religion</label>
+                  <select id="stu-religion">
+                    <option value="P">Protestant (P)</option>
+                    <option value="C">Catholic (C)</option>
+                    <option value="M">Muslim (M)</option>
+                    <option value="BA">Born Again (BA)</option>
+                    <option value="O">Other (O)</option>
+                  </select>
+                </div>
+
+                <div style="width:220px">
+                  <label>Parent Phone</label>
+                  <input id="stu-parent-phone" placeholder="+1234567890" />
+                </div>
+
+                <div style="width:220px">
+                  <label>Passport Photo (any size)</label>
+                  <input id="stu-photo" type="file" accept="image/*" />
+                </div>
+
+                <div style="display:flex;align-items:flex-end">
+                  <button id="btn-register" class="btn primary">Register</button>
+                </div>
+              </div>
+            </form>
+
+            <div style="margin-top:12px; max-height:480px; overflow:auto">
+              <table>
+                <thead><tr><th>ID</th><th>Photo</th><th>Name</th><th>Religion</th><th>Parent Phone</th><th>Gender</th><th>Class</th><th>Year</th><th>PIN</th><th>Actions</th></tr></thead>
+                <tbody id="students-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Users (unchanged) -->
+          <section id="users" class="view card">
+            <h2 style="margin:0 0 8px 0;color:var(--purple)">Authorized Users</h2>
+
+            <form id="user-form" style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="min-width:160px">
+                <label>Username</label>
+                <input id="user-name" required />
+              </div>
+              <div style="min-width:160px">
+                <label>Password</label>
+                <input id="user-pass" required />
+              </div>
+              <div style="width:140px">
+                <label>Role</label>
+                <select id="user-role">
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div style="display:flex;align-items:flex-end">
+                <button id="create-user" class="btn primary">Create</button>
+              </div>
+            </form>
+
+            <div style="margin-top:12px">
+              <table>
+                <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+                <tbody id="users-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </section>
+
+    <footer style="margin-top:18px" class="muted small center">Single-file demo • Local storage only • For production connect a proper backend</footer>
+  </div>
+
+  <!-- Hidden photo uploader -->
+  <input id="photo-uploader" type="file" accept="image/*" style="display:none" />
+
+  <!-- Permission modal (unchanged) -->
+  <div id="perm-modal-backdrop" class="modal-backdrop" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perm-title">
+      <h3 id="perm-title" style="margin:0 0 8px 0;color:var(--purple)">Set Permissions</h3>
+      <div id="perm-sub" class="muted small"></div>
+      <div class="perm-list" id="perm-list"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="perm-cancel" class="btn ghost">Cancel</button>
+        <button id="perm-save" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settings-modal" class="modal-backdrop" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <h3 id="settings-title" style="margin:0 0 8px 0;color:var(--purple)">School Settings</h3>
+      <div style="margin-top:8px">
+        <label>Term duration (days)</label>
+        <input id="term-days" type="number" min="1" />
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="settings-cancel" class="btn ghost">Cancel</button>
+        <button id="settings-save" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit student modal (admin only) -->
+  <div id="edit-student-modal" class="modal-backdrop" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-stu-title">
+      <h3 id="edit-stu-title" style="margin:0 0 8px 0;color:var(--purple)">Edit Student</h3>
+      <form id="edit-stu-form">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="width:100%">
+            <label>Student ID (read-only)</label>
+            <input id="edit-stu-id" readonly />
+          </div>
+          <div style="flex:1;min-width:140px">
+            <label>First Name</label>
+            <input id="edit-stu-first" required />
+          </div>
+          <div style="flex:1;min-width:140px">
+            <label>Last Name</label>
+            <input id="edit-stu-last" required />
+          </div>
+          <div style="width:140px">
+            <label>Gender</label>
+            <select id="edit-stu-gender">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div style="width:140px">
+            <label>Class</label>
+            <select id="edit-stu-class"></select>
+          </div>
+          <div style="width:140px">
+            <label>Year</label>
+            <select id="edit-stu-year"></select>
+          </div>
+          <div style="width:180px">
+            <label>Religion</label>
+            <select id="edit-stu-religion">
+              <option value="P">Protestant (P)</option>
+              <option value="C">Catholic (C)</option>
+              <option value="M">Muslim (M)</option>
+              <option value="BA">Born Again (BA)</option>
+              <option value="O">Other (O)</option>
+            </select>
+          </div>
+          <div style="width:220px">
+            <label>Parent Phone</label>
+            <input id="edit-stu-parent-phone" />
+          </div>
+          <div style="width:220px">
+            <label>PIN (4-digit)</label>
+            <input id="edit-stu-pin" maxlength="4" />
+          </div>
+          <div style="width:220px">
+            <label>Change Photo</label>
+            <input id="edit-stu-photo" type="file" accept="image/*" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button type="button" id="edit-stu-cancel" class="btn ghost">Cancel</button>
+          <button type="submit" id="edit-stu-save" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Keep the app logic mostly as before, add:
+    // - green menu styling applied via CSS above
+    // - sticky table headers via CSS (thead th position: sticky)
+    // - admin-edit-student modal: admin can edit all student fields except ID
+    // - edit button appears for admin in Students table
+    // - save updates student record and refresh views
+
+    const LS = 'sr_rollcall_demo_quickids';
+    const CLASSES = ['S.1','S.2','S.3','S.4','S.5','S.6'];
+    const YEARS = Array.from({length:15},(_,i)=>2026+i);
+    const MENU_KEYS = ['dashboard','rollcall','attendance','students','users'];
+
+    const DEFAULT_ADMIN_PERMS = { dashboard:true, rollcall:true, attendance:true, students:true, users:true, view_others:true, view_stats:true, view_photos:true };
+    const DEFAULT_STAFF_PERMS = { dashboard:true, rollcall:true, attendance:true, students:false, users:false, view_others:false, view_stats:true, view_photos:false };
+    const DEFAULT_STUDENT_PERMS = { student_home:true, dashboard:false, rollcall:false, attendance:false, students:false, users:false, view_others:false, view_stats:false, view_photos:false };
+
+    let state = { users:[], students:[], attendance:[], session:null, settings:{ termDays:90 } };
+
+    const $ = id => document.getElementById(id);
+    const nowISO = ()=> new Date().toISOString();
+    const todayISODate = ()=> new Date().toISOString().slice(0,10);
+    const nice = iso=> new Date(iso).toLocaleString();
+
+    function load(){ const raw = localStorage.getItem(LS); if (raw) state = JSON.parse(raw); else { state.users = [{ username:'Admins', password:'Admin123', role:'admin', perms:DEFAULT_ADMIN_PERMS, created_at:nowISO() }]; state.students = []; state.attendance = []; state.session = null; state.settings = { termDays:90 }; save(); } if (!state.settings) state.settings = { termDays:90 }; }
+    function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+
+    function populateSelectors(){
+      const sc = $('stu-class'), rc = $('rc-class');
+      sc.innerHTML=''; rc.innerHTML='';
+      CLASSES.forEach(c=>{ sc.appendChild(new Option(c,c)); rc.appendChild(new Option(c,c)); });
+      YEARS.forEach(y=>{ $('stu-year').appendChild(new Option(y,y)); $('rc-year').appendChild(new Option(y,y)); });
+      // edit modal selects
+      const esc = $('edit-stu-class'), esy = $('edit-stu-year');
+      if (esc){ esc.innerHTML=''; CLASSES.forEach(c=> esc.appendChild(new Option(c,c))); }
+      if (esy){ esy.innerHTML=''; YEARS.forEach(y=> esy.appendChild(new Option(y,y))); }
+
+      const fs = $('filter-stu'); if (fs) { fs.innerHTML = '<option value="">All students</option>'; state.students.forEach(s => fs.appendChild(new Option(`${s.id} — ${s.first} ${s.last}`, s.id))); }
+      if ($('term-days')) $('term-days').value = state.settings.termDays || 90;
+    }
+
+    function refreshStats(){ $('stat-students').textContent = state.students.length; $('stat-att').textContent = state.attendance.length; $('stat-users').textContent = state.users.length; $('enrolment-total').textContent = state.students.length; }
+
+    function isMarkedToday(studentId){
+      const today = todayISODate();
+      return state.attendance.some(a => a.student === studentId && a.ts.slice(0,10) === today);
+    }
+    function canViewStudentPhoto(studentId){
+      if (!state.session) return false;
+      if (state.session.role === 'admin') return true;
+      if (state.session.role === 'student') return state.session.ref === studentId;
+      const user = state.users.find(u=>u.username === state.session.ref);
+      return !!(user && user.perms && user.perms.view_photos);
+    }
+
+    function updateRollcallMarkedStates(){
+      const sel = $('rc-students');
+      if (!sel) return;
+      Array.from(sel.options).forEach(opt => {
+        const id = opt.value;
+        if (!opt.dataset.base) opt.dataset.base = opt.textContent;
+        const marked = isMarkedToday(id);
+        if (marked){ opt.disabled = true; if (!opt.dataset.markedAdded){ opt.textContent = `${opt.dataset.base} — marked`; opt.dataset.markedAdded = '1'; } }
+        else { opt.disabled = false; if (opt.dataset.markedAdded){ opt.textContent = opt.dataset.base; delete opt.dataset.markedAdded; } }
+      });
+    }
+
+    function refreshRecent(){
+      const body = $('recent-body'); body.innerHTML='';
+      let list = [...state.attendance].sort((a,b)=>b.ts.localeCompare(a.ts));
+      if (state.session && state.session.role === 'student'){
+        const stu = state.students.find(s=>s.id === state.session.ref);
+        const canViewOthers = !!(stu && stu.perms && stu.perms.view_others);
+        if (!canViewOthers) list = list.filter(r => r.student === state.session.ref);
+      }
+      list = list.slice(0,8);
+      list.forEach(r=>{
+        const s = state.students.find(st=>st.id===r.student) || {first:'?',last:'?'};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.student} — ${s.first} ${s.last}</td><td><span class="badge ${r.status}">${r.status}</span></td><td>${r.by||'System'}</td><td>${nice(r.ts)}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function refreshAttendance(filterId=null, from=null, to=null){
+      const body = $('att-body'); if (!body) return;
+      body.innerHTML = '';
+      let recs = [...state.attendance].sort((a,b)=>b.ts.localeCompare(a.ts));
+      if (state.session && state.session.role === 'student'){
+        const stu = state.students.find(s=>s.id === state.session.ref);
+        const canViewOthers = !!(stu && stu.perms && stu.perms.view_others);
+        if (!canViewOthers){ filterId = state.session.ref; const fs = $('filter-stu'); if (fs){ fs.value = state.session.ref; fs.disabled = true; } }
+      }
+      if (filterId) recs = recs.filter(r=>r.student===filterId);
+      if (from) recs = recs.filter(r=>new Date(r.ts) >= new Date(from));
+      if (to) recs = recs.filter(r=>new Date(r.ts) <= new Date(to + 'T23:59:59'));
+      recs.forEach(r=>{
+        const s = state.students.find(st=>st.id===r.student) || {first:'?',last:'?'};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.student} — ${s.first} ${s.last}</td><td><span class="badge ${r.status}">${r.status}</span></td><td>${r.by||'System'}</td><td>${nice(r.ts)}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    // students table: include edit button if admin
+    function refreshStudentsTable(){
+      const body = $('students-body'); if (!body) return; body.innerHTML = '';
+      state.students.forEach(s=>{
+        const canView = canViewStudentPhoto(s.id);
+        const photoCell = s.photo ? (canView ? `<img src="${s.photo}" class="student-thumb" alt="photo" />` : `<span class="muted small">Hidden</span>`) : `<span class="muted small">—</span>`;
+        const editBtn = isAdmin() ? `<button class="btn" data-action="edit-stu" data-id="${s.id}">Edit</button>` : '';
+        const editPhotoBtn = isAdmin() ? `<button class="btn" data-action="edit-photo" data-id="${s.id}">Edit Photo</button>` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="white-space:nowrap">${s.id}</td><td>${photoCell}</td><td>${s.first} ${s.last}</td><td>${s.religion || 'O'}</td><td>${s.parent_phone||'—'}</td><td>${capitalize(s.gender)}</td><td>${s.class}</td><td>${s.year}</td><td>${s.pin}</td><td><button class="btn" data-action="reset" data-id="${s.id}">Reset PIN</button> <button class="btn ghost" data-action="perms" data-type="student" data-id="${s.id}">Permissions</button> ${editBtn} ${editPhotoBtn} <button class="btn ghost" data-action="delete" data-id="${s.id}">Delete</button></td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function refreshUsersTable(){ const body = $('users-body'); if (!body) return; body.innerHTML = ''; state.users.forEach(u=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td><td><button class="btn" data-action="chpass" data-user="${u.username}">Change Pass</button> <button class="btn ghost" data-action="perms" data-type="user" data-user="${u.username}">Permissions</button> <button class="btn ghost" data-action="deluser" data-user="${u.username}">Delete</button></td>`; body.appendChild(tr); }); }
+
+    function capitalize(s){ return String(s||'').charAt(0).toUpperCase() + String(s||'').slice(1); }
+    function pad(n){ return String(n).padStart(4,'0'); }
+    function nextSeq(cls,year){ const filtered = state.students.filter(s=>s.class===cls && String(s.year)===String(year)); return filtered.length + 1; }
+    function genId(cls,year,seq){ return `SR-${cls}-${year}-${pad(seq)}`; }
+    function genPin(){ return pad(Math.floor(Math.random()*10000)); }
+    function isAdmin(){ return state.session && state.session.role === 'admin'; }
+
+    // file reading helper
+    function readFileInputAsDataURL(fileInput){
+      return new Promise((resolve) => {
+        const f = fileInput && fileInput.files && fileInput.files[0];
+        if (!f) return resolve(null);
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = () => resolve(null);
+        fr.readAsDataURL(f);
+      });
+    }
+
+    // registration (unchanged except religion + parent phone)
+    async function registerStudent(e){
+      e.preventDefault();
+      if (!canAccessView('students')) { alert('You do not have permission to register students.'); return; }
+      const first = $('stu-first').value.trim(), last = $('stu-last').value.trim();
+      const gender = $('stu-gender').value;
+      const cls = $('stu-class').value, year = $('stu-year').value;
+      const religion = $('stu-religion').value || 'O';
+      const parentPhone = $('stu-parent-phone').value.trim();
+      if (!first || !last) { alert('First and last name required'); return; }
+      const seq = nextSeq(cls,year); const id = genId(cls,year,seq); const pin = genPin();
+      const photoData = await readFileInputAsDataURL($('stu-photo'));
+      const perms = Object.assign({}, DEFAULT_STUDENT_PERMS);
+      state.students.push({ id, first, last, gender, class:cls, year:Number(year), number:seq, pin, perms, photo: photoData || null, religion, parent_phone: parentPhone || '', created_at:nowISO() });
+      save();
+      $('stu-first').value=''; $('stu-last').value=''; $('stu-photo').value=''; $('stu-parent-phone').value='';
+      populateSelectors(); refreshStudentsTable(); refreshAll();
+      alert(`Student registered\nID: ${id}\nPIN: ${pin}\n(Please record the PIN for the student)`);
+    }
+
+    // login/logout, permission helpers (unchanged)
+    function login(username,pin,roleTab){
+      const user = state.users.find(u=>u.username===username);
+      if (user && user.password===pin){ state.session = { username:user.username, role:user.role, ref:user.username }; save(); enterApp(); return true; }
+      const stu = state.students.find(s=>s.id===username);
+      if (stu && stu.pin===pin){ state.session = { username:stu.id, role:'student', ref:stu.id }; save(); enterApp(); return true; }
+      alert('Invalid credentials'); return false;
+    }
+    function logout(){ state.session = null; save(); $('app').style.display = 'none'; $('login-screen').style.display = ''; document.querySelectorAll('.nav-btn').forEach(b => b.style.display = ''); if ($('student-inline-section')) $('student-inline-section').style.display = 'none'; }
+    function enterApp(){ $('login-screen').style.display = 'none'; $('app').style.display = ''; $('who').textContent = state.session.username + ' • ' + state.session.role; populateSelectors(); renderNavForSession(); if (state.session.role === 'student') openStudentHome(state.session.ref); else { showView('dashboard'); refreshAll(); } }
+
+    function renderNavForSession(){
+      const navButtons = document.querySelectorAll('.nav-btn');
+      if (!state.session) { navButtons.forEach(b=>b.style.display='none'); $('settings-btn').style.display = 'none'; return; }
+      if (state.session.role === 'admin') { navButtons.forEach(b=> b.style.display = ''); $('settings-btn').style.display = ''; return; }
+      if (state.session.role === 'student'){
+        const stu = state.students.find(s=>s.id === state.session.ref);
+        const perms = stu && stu.perms ? stu.perms : Object.assign({}, DEFAULT_STUDENT_PERMS);
+        navButtons.forEach(b=>{
+          const view = b.getAttribute('data-view');
+          if (view === 'attendance'){ b.style.display = !!(perms.attendance || perms.view_others) ? '' : 'none'; }
+          else { b.style.display = !!perms[view] ? '' : 'none'; }
+        });
+        $('settings-btn').style.display = 'none';
+        return;
+      }
+      const user = state.users.find(u=>u.username === state.session.ref);
+      const perms = user && user.perms ? user.perms : Object.assign({}, DEFAULT_STAFF_PERMS);
+      navButtons.forEach(b=>{ const view = b.getAttribute('data-view'); b.style.display = !!perms[view] ? '' : 'none'; });
+      $('settings-btn').style.display = 'none';
+    }
+
+    function canAccessView(view){
+      if (!state.session) return false;
+      if (state.session.role === 'admin') return true;
+      if (state.session.role === 'student'){
+        const stu = state.students.find(s=>s.id === state.session.ref);
+        const perms = (stu && stu.perms) || Object.assign({}, DEFAULT_STUDENT_PERMS);
+        if (view === 'attendance') return !!(perms.attendance || perms.view_others);
+        if (view === 'dashboard') return true;
+        return !!perms[view];
+      }
+      const user = state.users.find(u=>u.username === state.session.ref);
+      const perms = (user && user.perms) || Object.assign({}, DEFAULT_STAFF_PERMS);
+      return !!perms[view];
+    }
+
+    function showView(id){
+      if (!canAccessView(id)) {
+        if (state.session && state.session.role === 'student' && id === 'attendance') { openStudentHome(state.session.ref); return; }
+        alert('You do not have permission to access this view.'); return;
+      }
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      const el = document.getElementById(id); if (el) el.classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b=> b.classList.toggle('active', b.getAttribute('data-view')===id));
+      if (id==='dashboard') refreshAll();
+      if (id==='attendance'){ adaptAttendanceFilterForSession(); refreshAttendance($('filter-stu').value,$('filter-from').value,$('filter-to').value); }
+      if (id==='students') { populateSelectors(); refreshStudentsTable(); }
+      if (id==='users') refreshUsersTable();
+      if (id==='rollcall') { populateSelectors(); fillRollcallList(); }
+    }
+
+    function openStudentHome(studentId){
+      const stu = state.students.find(s=>s.id === studentId);
+      if (!stu) { alert('Student record not found'); logout(); return; }
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      $('dashboard').classList.add('active');
+      const tbody = $('student-inline-body'); tbody.innerHTML = '';
+      const recs = state.attendance.filter(a => a.student === stu.id).sort((a,b)=>b.ts.localeCompare(a.ts));
+      recs.forEach(r=>{ const tr = document.createElement('tr'); tr.innerHTML = `<td><span class="badge ${r.status}">${r.status}</span></td><td>${nice(r.ts)}</td><td>${r.by||'System'}</td>`; tbody.appendChild(tr); });
+      const photoWrap = $('student-photo-wrap'); photoWrap.innerHTML = '';
+      if (stu.photo && canViewStudentPhoto(stu.id)){
+        const img = document.createElement('img'); img.src = stu.photo; img.className = 'student-photo-large'; photoWrap.appendChild(img);
+      } else if (stu.photo) {
+        photoWrap.innerHTML = '<div class="muted small">Photo hidden (insufficient permission)</div>';
+      }
+      $('student-inline-section').style.display = '';
+      const hasStats = !!(stu.perms && stu.perms.view_stats);
+      if (hasStats) renderClassBreakdown(); else { if ($('class-breakdown')) $('class-breakdown').innerHTML = ''; if ($('male-present')) $('male-present').textContent = '—'; if ($('female-present')) $('female-present').textContent = '—'; if ($('other-present')) $('other-present').textContent = '—'; }
+      renderNavForSession();
+      adaptAttendanceFilterForSession();
+      refreshRecent();
+      renderExtraStats();
+    }
+
+    function adaptAttendanceFilterForSession(){
+      const filterSelect = $('filter-stu');
+      if (!filterSelect) return;
+      if (!state.session) { filterSelect.disabled = false; return; }
+      if (state.session.role === 'student'){
+        const stu = state.students.find(s=>s.id === state.session.ref);
+        const perms = (stu && stu.perms) || Object.assign({}, DEFAULT_STUDENT_PERMS);
+        if (perms.view_others){ filterSelect.disabled = false; populateSelectors(); }
+        else {
+          filterSelect.innerHTML = ''; const opt = new Option(`${stu.id} — ${stu.first} ${stu.last}`, stu.id); filterSelect.appendChild(opt); filterSelect.value = stu.id; filterSelect.disabled = true;
+        }
+      } else {
+        filterSelect.disabled = false; populateSelectors();
+      }
+    }
+
+    function fillRollcallList(){ const cls = $('rc-class').value, year = $('rc-year').value; const sel = $('rc-students'); sel.innerHTML=''; state.students.filter(s=>s.class===cls && String(s.year)===String(year)).forEach(s=>{ const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.id} — ${s.first} ${s.last} (${capitalize(s.gender)})`; o.dataset.base = o.textContent; sel.appendChild(o); }); updateRollcallMarkedStates(); }
+
+    function applyRollcall(){
+      if (!canAccessView('rollcall')) { alert('You do not have permission to mark rollcall.'); return; }
+      const opts = Array.from($('rc-students').selectedOptions).map(o=>o.value);
+      const status = $('rc-status').value;
+      if (!opts.length){ alert('Select students to mark'); return; }
+      const actor = state.session ? state.session.username : 'System';
+      const today = todayISODate();
+      const toMark = opts.filter(sid => !state.attendance.some(a => a.student === sid && a.ts.slice(0,10) === today));
+      const skipped = opts.length - toMark.length;
+      toMark.forEach(sid=>{
+        state.attendance.push({ id:'a-'+Date.now()+'-'+Math.random().toString(36).slice(2,6), student:sid, status, ts:nowISO(), by:actor });
+      });
+      save();
+      refreshAll();
+      updateRollcallMarkedStates();
+      $('rc-msg').textContent = `Marked ${toMark.length} student(s) as ${status}${skipped ? ' — skipped ' + skipped + ' already marked today' : ''}`;
+      refreshAttendance();
+    }
+
+    function applyRollcallByNumbers(){
+      if (!canAccessView('rollcall')) { alert('You do not have permission to mark rollcall.'); return; }
+      const raw = $('rc-ids').value || ''; const status = $('rc-status').value; const rcClass = $('rc-class').value; const rcYear = $('rc-year').value; const msgEl = $('rc-ids-msg'); msgEl.textContent = ''; if (!raw.trim()){ msgEl.textContent = 'Enter at least one student number (e.g. 0001).'; return; }
+      const tokens = raw.split(/[,;\s]+/).map(t=>t.trim()).filter(Boolean); const matched = []; const unmatched = [];
+      tokens.forEach(tok => {
+        if (/^SR-/.test(tok)) {
+          const stu = state.students.find(s => s.id.toLowerCase() === tok.toLowerCase());
+          if (stu && ( (!rcClass || stu.class === rcClass) && (!rcYear || String(stu.year) === String(rcYear)) )) matched.push(stu.id);
+          else unmatched.push(tok);
+          return;
+        }
+        const digits = (tok.match(/\d+/g) || []).join('');
+        if (!digits) { unmatched.push(tok); return; }
+        const numPad = digits.length > 4 ? digits.slice(-4) : pad(parseInt(digits,10));
+        const found = state.students.find(s => {
+          const matchesNumber = pad(s.number) === numPad || String(s.number) === String(parseInt(digits,10));
+          const matchesClass = rcClass ? s.class === rcClass : true;
+          const matchesYear = rcYear ? String(s.year) === String(rcYear) : true;
+          return matchesNumber && matchesClass && matchesYear;
+        });
+        if (found) matched.push(found.id); else unmatched.push(tok);
+      });
+      const uniqueMatched = Array.from(new Set(matched));
+      if (!uniqueMatched.length){ msgEl.textContent = `No matching students found. Unmatched: ${unmatched.join(', ')}`; return; }
+
+      const actor = state.session ? state.session.username : 'System';
+      const today = todayISODate();
+      const toMark = uniqueMatched.filter(sid => !state.attendance.some(a => a.student === sid && a.ts.slice(0,10) === today));
+      const skipped = uniqueMatched.length - toMark.length;
+
+      toMark.forEach(sid => { state.attendance.push({ id:'a-'+Date.now()+'-'+Math.random().toString(36).slice(2,6), student:sid, status, ts:nowISO(), by:actor }); });
+      save(); refreshAll(); updateRollcallMarkedStates();
+      msgEl.textContent = `Marked ${toMark.length} student(s): ${toMark.join(', ')}${skipped ? ' — skipped ' + skipped + ' already marked today' : ''}${unmatched.length ? ' — unmatched: ' + unmatched.join(', ') : ''}`;
+      refreshAttendance();
+    }
+
+    function resetStudentPin(id){ if (!confirm('Generate a new 4-digit PIN for ' + id + '?')) return; const stu = state.students.find(s=>s.id===id); if (!stu) return alert('Not found'); stu.pin = genPin(); save(); refreshStudentsTable(); alert(`New PIN for ${id}: ${stu.pin}`); }
+    function deleteStudent(id){ if (!confirm('Delete student ' + id + '? This will remove all attendance records.')) return; state.students = state.students.filter(s=>s.id!==id); state.attendance = state.attendance.filter(a=>a.student!==id); save(); refreshStudentsTable(); refreshAll(); }
+
+    function createUser(e){ e.preventDefault(); const u = $('user-name').value.trim(), p = $('user-pass').value.trim(), r = $('user-role').value; if (!u || !p) return alert('Provide username and password'); if (state.users.find(x=>x.username===u)) return alert('Username exists'); const perms = (r === 'admin') ? Object.assign({}, DEFAULT_ADMIN_PERMS) : Object.assign({}, DEFAULT_STAFF_PERMS); state.users.push({ username:u, password:p, role:r, perms, created_at:nowISO() }); save(); refreshUsersTable(); refreshAll(); $('user-name').value=''; $('user-pass').value=''; }
+    function changeUserPass(username){ const user = state.users.find(u=>u.username===username); if (!user) return; const np = prompt('New password for ' + username); if (!np) return; user.password = np; save(); refreshUsersTable(); alert('Password updated'); }
+    function deleteUser(username){ if (username === 'Admins') return alert('Cannot delete default Admin account in demo.'); if (!confirm('Delete user ' + username + '?')) return; state.users = state.users.filter(u=>u.username!==username); save(); refreshUsersTable(); refreshAll(); }
+
+    function forgotPinFlow(){ const id = prompt('Enter your Student ID (e.g. SR-S.4-2026-0001) or username:'); if (!id) return; const stu = state.students.find(s=>s.id===id); if (stu){ const last = prompt('Enter student last name to verify:'); if (!last) return; if (last.trim().toLowerCase() === stu.last.toLowerCase()){ const newPin = genPin(); stu.pin = newPin; save(); refreshStudentsTable(); alert(`PIN reset. New PIN for ${stu.id}: ${newPin}`); return; } else { alert('Verification failed'); return; } } const user = state.users.find(u=>u.username===id); if (user){ const admin = prompt('Enter an admin username to authorize this reset (Admins by default):'); if (!admin) return; const adminUser = state.users.find(u=>u.username===admin); if (!adminUser) return alert('Admin user not found'); const pwd = prompt('Enter admin password to authorize:'); if (pwd === adminUser.password){ const np = prompt('Enter new password for ' + id); if (!np) return; user.password = np; save(); refreshUsersTable(); alert('Password reset'); return; } else { alert('Authorization failed'); return; } } alert('No matching student or user found.'); }
+
+    // top student by days (unchanged)
+    function topStudentByDays(days){
+      const cutoff = Date.now() - (days * 24*60*60*1000);
+      const counts = {};
+      state.attendance.forEach(a => {
+        if (a.status !== 'present') return;
+        if (new Date(a.ts).getTime() < cutoff) return;
+        counts[a.student] = (counts[a.student]||0) + 1;
+      });
+      let best = null;
+      Object.keys(counts).forEach(id => {
+        const c = counts[id];
+        if (!best || c > best.count) best = { id, count: c };
+      });
+      return best;
+    }
+
+    function computePresentByGenderToday(filterClass='', filterYear=''){ const today = todayISODate(); let todays = state.attendance.filter(a => a.status === 'present' && a.ts.slice(0,10) === today); if (filterClass) { const filteredIds = state.students.filter(s => s.class === filterClass).map(s => s.id); todays = todays.filter(a => filteredIds.includes(a.student)); } if (filterYear) { const filteredIds = state.students.filter(s => String(s.year) === String(filterYear)).map(s => s.id); todays = todays.filter(a => filteredIds.includes(a.student)); } const result = {}; CLASSES.forEach(c => result[c] = {male:0,female:0,other:0,total:0}); todays.forEach(r => { const s = state.students.find(st => st.id === r.student); if (!s) return; const cls = s.class; const g = (s.gender || 'other').toLowerCase(); if (!result[cls]) result[cls] = {male:0,female:0,other:0,total:0}; if (g==='male') result[cls].male++; else if (g==='female') result[cls].female++; else result[cls].other++; result[cls].total++; }); return result; }
+    function renderClassBreakdown(filterClass='', filterYear=''){ if (!sessionAllowsViewStats()) { if ($('class-breakdown')) $('class-breakdown').innerHTML = ''; if ($('male-present')) $('male-present').textContent = '—'; if ($('female-present')) $('female-present').textContent = '—'; if ($('other-present')) $('other-present').textContent = '—'; return; } const container = $('class-breakdown'); container.innerHTML = ''; const byClass = computePresentByGenderToday(filterClass, filterYear); let maleSum=0,femaleSum=0,otherSum=0; CLASSES.forEach(cls => { const data = byClass[cls] || {male:0,female:0,other:0,total:0}; maleSum += data.male; femaleSum += data.female; otherSum += data.other; const card = document.createElement('div'); card.className = 'class-card'; card.innerHTML = `<div style="font-weight:700">${cls}</div><div style="display:flex;justify-content:space-between;margin-top:8px"><div class="muted small">Male</div><div class="count">${data.male}</div></div><div style="display:flex;justify-content:space-between;margin-top:6px"><div class="muted small">Female</div><div class="count">${data.female}</div></div><div style="display:flex;justify-content:space-between;margin-top:6px"><div class="muted small">Other</div><div class="count">${data.other}</div></div><div style="display:flex;justify-content:space-between;margin-top:8px;border-top:1px dashed rgba(16,24,40,0.04);padding-top:8px"><div class="muted small">Total Present</div><div style="font-weight:800">${data.total}</div></div>`; container.appendChild(card); }); $('male-present').textContent = maleSum; $('female-present').textContent = femaleSum; $('other-present').textContent = otherSum; }
+
+    function sessionAllowsViewStats(){ if (!state.session) return false; if (state.session.role === 'admin') return true; if (state.session.role === 'student'){ const stu = state.students.find(s=>s.id === state.session.ref); return !!(stu && stu.perms && stu.perms.view_stats); } const user = state.users.find(u=>u.username === state.session.ref); return !!(user && user.perms && user.perms.view_stats); }
+
+    function renderExtraStats(){
+      $('enrolment-total').textContent = state.students.length;
+      if (!sessionAllowsViewStats()){
+        if ($('most-regular-week')) $('most-regular-week').textContent = '—';
+        if ($('most-regular-month')) $('most-regular-month').textContent = '—';
+        if ($('most-regular-term')) $('most-regular-term').textContent = '—';
+        return;
+      }
+      const weekTop = topStudentByDays(7);
+      if (!weekTop) $('most-regular-week').textContent = '—';
+      else { const stu = state.students.find(s=>s.id === weekTop.id); const name = stu ? `${stu.first} ${stu.last}` : weekTop.id; $('most-regular-week').textContent = `${weekTop.id} — ${name} (${weekTop.count} presents)`; }
+
+      const monthTop = topStudentByDays(30);
+      if (!monthTop) $('most-regular-month').textContent = '—';
+      else { const stu = state.students.find(s=>s.id === monthTop.id); const name = stu ? `${stu.first} ${stu.last}` : monthTop.id; $('most-regular-month').textContent = `${monthTop.id} — ${name} (${monthTop.count} presents)`; }
+
+      const termDays = parseInt(state.settings.termDays || 90, 10);
+      const termTop = topStudentByDays(termDays);
+      if (!termTop) $('most-regular-term').textContent = '—';
+      else { const stu = state.students.find(s=>s.id === termTop.id); const name = stu ? `${stu.first} ${stu.last}` : termTop.id; $('most-regular-term').textContent = `${termTop.id} — ${name} (${termTop.count} presents over ${termDays} days)`; }
+    }
+
+    function refreshAll(){ populateSelectors(); refreshStats(); renderClassBreakdown(); renderExtraStats(); refreshRecent(); refreshAttendance(); refreshStudentsTable(); refreshUsersTable(); adaptAttendanceFilterForSession(); updateRollcallMarkedStates(); }
+
+    // Permissions modal (unchanged)
+    const permModal = $('perm-modal-backdrop'); const permList = $('perm-list'); let currentPermTarget = null;
+    function openPermModal(type, id){ currentPermTarget = { type, id }; $('perm-title').textContent = type === 'user' ? `User Permissions: ${id}` : `Student Permissions: ${id}`; $('perm-sub').textContent = 'Toggle menu access, view others, view_stats and view_photos permission'; let perms = {}; if (type === 'user'){ const u = state.users.find(x=>x.username===id); perms = u && u.perms ? u.perms : {}; } else { const s = state.students.find(x=>x.id===id); perms = s && s.perms ? s.perms : {}; } permList.innerHTML = ''; MENU_KEYS.forEach(key => { const checked = !!perms[key]; const row = document.createElement('label'); row.className = 'perm-row'; row.innerHTML = `<input type="checkbox" data-key="${key}" ${checked ? 'checked' : ''}/> <span style="font-weight:600">${capitalize(key)}</span>`; permList.appendChild(row); }); const viewOthersChecked = !!perms['view_others']; const rowView = document.createElement('label'); rowView.className = 'perm-row'; rowView.innerHTML = `<input type="checkbox" data-key="view_others" ${viewOthersChecked ? 'checked' : ''}/> <span style="font-weight:600">Allow view other students' attendance</span>`; permList.appendChild(rowView); const viewStatsChecked = !!perms['view_stats']; const rowStats = document.createElement('label'); rowStats.className = 'perm-row'; rowStats.innerHTML = `<input type="checkbox" data-key="view_stats" ${viewStatsChecked ? 'checked' : ''}/> <span style="font-weight:600">Allow view stats</span>`; permList.appendChild(rowStats); const viewPhotosChecked = !!perms['view_photos']; const rowPhotos = document.createElement('label'); rowPhotos.className = 'perm-row'; rowPhotos.innerHTML = `<input type="checkbox" data-key="view_photos" ${viewPhotosChecked ? 'checked' : ''}/> <span style="font-weight:600">Allow view student photos</span>`; permList.appendChild(rowPhotos); if (type === 'student'){ const shChecked = perms['student_home'] === undefined ? true : !!perms['student_home']; const rowSH = document.createElement('label'); rowSH.className = 'perm-row'; rowSH.innerHTML = `<input type="checkbox" data-key="student_home" ${shChecked ? 'checked' : ''}/> <span style="font-weight:600">Allow access to your student dashboard</span>`; permList.appendChild(rowSH); } permModal.style.display = 'flex'; }
+    function closePermModal(){ currentPermTarget = null; permModal.style.display = 'none'; permList.innerHTML = ''; }
+    function savePermsFromModal(){ if (!currentPermTarget) return closePermModal(); const boxes = Array.from(permList.querySelectorAll('input[type="checkbox"]')); const newPerms = {}; boxes.forEach(cb => { newPerms[cb.dataset.key] = cb.checked; }); if (currentPermTarget.type === 'user'){ const u = state.users.find(x=>x.username===currentPermTarget.id); if (!u) return alert('User not found'); if (u.username === 'Admins') newPerms.dashboard = true; u.perms = newPerms; } else { const s = state.students.find(x=>x.id===currentPermTarget.id); if (!s) return alert('Student not found'); s.perms = newPerms; } save(); closePermModal(); renderNavForSession(); refreshUsersTable(); refreshStudentsTable(); alert('Permissions updated'); }
+
+    // Settings modal handlers
+    function openSettingsModal(){ if (!isAdmin()) return alert('Only admin can change settings.'); $('settings-modal').style.display = 'flex'; $('term-days').value = state.settings.termDays || 90; }
+    function closeSettingsModal(){ $('settings-modal').style.display = 'none'; }
+    function saveSettings(){ if (!isAdmin()) return alert('Only admin can save settings.'); const days = parseInt($('term-days').value,10); if (!days || days < 1) return alert('Enter a valid number of days for term duration.'); state.settings.termDays = days; save(); closeSettingsModal(); refreshAll(); alert('Settings saved'); }
+
+    // Student photo edit via hidden uploader and edit modal
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      const action = btn.dataset.action, id = btn.dataset.id;
+      if (!action) return;
+      if (action === 'edit-photo'){ if (!isAdmin()){ return alert('Only admin can change photos in demo'); } const uploader = $('photo-uploader'); uploader.dataset.target = id; uploader.value = ''; uploader.click(); }
+      if (action === 'edit-stu'){ if (!isAdmin()) return alert('Only admin can edit students'); openEditStudentModal(id); }
+      if (action === 'reset') resetStudentPin(id);
+      if (action === 'delete') deleteStudent(id);
+      if (action === 'perms') openPermModal('student', id);
+    });
+
+    $('photo-uploader').addEventListener('change', async function(){
+      const id = this.dataset.target; if (!id) return;
+      const dataUrl = await readFileInputAsDataURL(this);
+      if (!dataUrl) return alert('Failed to read image');
+      const stu = state.students.find(s=>s.id === id); if (!stu) return alert('Student not found');
+      stu.photo = dataUrl; save(); refreshStudentsTable(); refreshAll(); alert('Photo updated for ' + id);
+    });
+
+    // Edit student modal functions
+    function openEditStudentModal(id){
+      const stu = state.students.find(s=>s.id === id); if (!stu) return alert('Student not found');
+      // populate fields
+      $('edit-stu-id').value = stu.id;
+      $('edit-stu-first').value = stu.first || '';
+      $('edit-stu-last').value = stu.last || '';
+      $('edit-stu-gender').value = stu.gender || 'other';
+      $('edit-stu-class').value = stu.class || CLASSES[0];
+      $('edit-stu-year').value = stu.year || YEARS[0];
+      $('edit-stu-religion').value = stu.religion || 'O';
+      $('edit-stu-parent-phone').value = stu.parent_phone || '';
+      $('edit-stu-pin').value = stu.pin || '';
+      // clear photo input
+      $('edit-stu-photo').value = '';
+      $('edit-student-modal').style.display = 'flex';
+    }
+    function closeEditStudentModal(){ $('edit-student-modal').style.display = 'none'; }
+
+    // handle save
+    document.getElementById('edit-stu-form').addEventListener('submit', async function(e){
+      e.preventDefault();
+      if (!isAdmin()) return alert('Only admin can save edits.');
+      const id = $('edit-stu-id').value;
+      const stu = state.students.find(s=>s.id === id); if (!stu) return alert('Student not found');
+      stu.first = $('edit-stu-first').value.trim();
+      stu.last = $('edit-stu-last').value.trim();
+      stu.gender = $('edit-stu-gender').value;
+      stu.class = $('edit-stu-class').value;
+      stu.year = Number($('edit-stu-year').value);
+      stu.religion = $('edit-stu-religion').value;
+      stu.parent_phone = $('edit-stu-parent-phone').value.trim();
+      const pinVal = $('edit-stu-pin').value.trim();
+      if (pinVal) stu.pin = pinVal.slice(0,4).padStart(4,'0');
+      // photo change if provided
+      const dataUrl = await readFileInputAsDataURL($('edit-stu-photo'));
+      if (dataUrl) stu.photo = dataUrl;
+      save();
+      closeEditStudentModal();
+      refreshStudentsTable();
+      refreshAll();
+      alert('Student updated');
+    });
+
+    $('edit-stu-cancel').addEventListener('click', function(){ closeEditStudentModal(); });
+
+    // wiring and initialization
+    function init(){
+      load(); populateSelectors(); refreshAll();
+
+      document.querySelectorAll('.tab').forEach(t=>{ t.addEventListener('click', e=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); e.target.classList.add('active'); $('lbl-user').textContent = e.target.dataset.role === 'student' ? 'Student ID' : 'Username'; $('login-user').placeholder = e.target.dataset.role === 'student' ? 'SR-S.4-2026-0001' : 'Admins'; }); });
+      $('login-form').addEventListener('submit', e=>{ e.preventDefault(); login($('login-user').value.trim(), $('login-pin').value.trim(), document.querySelector('.tab.active').dataset.role); });
+      document.querySelectorAll('.nav-btn').forEach(btn=>{ btn.addEventListener('click', ()=> { const view = btn.getAttribute('data-view'); showView(view); }); });
+      $('btn-logout').addEventListener('click', logout);
+      $('reset-demo').addEventListener('click', ()=>{ if (confirm('Reset demo data?')) { localStorage.removeItem(LS); location.reload(); } });
+      $('about').addEventListener('click', ()=> alert('Single-file School Rollcall Demo. Local storage only.'));
+      $('btn-quick').addEventListener('click', ()=> alert('This is a single-file local demo. Use default admin to explore.'));
+      $('forgot-pin').addEventListener('click', e=>{ e.preventDefault(); forgotPinFlow(); });
+      $('settings-btn').addEventListener('click', openSettingsModal);
+      $('settings-cancel').addEventListener('click', closeSettingsModal);
+      $('settings-save').addEventListener('click', saveSettings);
+
+      $('reg-form').addEventListener('submit', registerStudent);
+      document.getElementById('students-body').addEventListener('click', e=>{ /* generic delegated actions handled above */ });
+
+      $('user-form').addEventListener('submit', createUser);
+      document.getElementById('users-body').addEventListener('click', e=>{ const btn = e.target.closest('button'); if (!btn) return; if (btn.dataset.action === 'chpass') changeUserPass(btn.dataset.user); if (btn.dataset.action === 'deluser') deleteUser(btn.dataset.user); if (btn.dataset.action === 'perms') openPermModal('user', btn.dataset.user); });
+
+      $('rc-class').addEventListener('change', ()=>{ fillRollcallList(); });
+      $('rc-year').addEventListener('change', ()=>{ fillRollcallList(); });
+      $('mark-btn').addEventListener('click', applyRollcall);
+      $('mark-ids-btn').addEventListener('click', applyRollcallByNumbers);
+
+      $('filter-btn').addEventListener('click', ()=> refreshAttendance($('filter-stu').value,$('filter-from').value,$('filter-to').value));
+      $('clear-filter').addEventListener('click', ()=> { $('filter-stu').value=''; $('filter-from').value=''; $('filter-to').value=''; refreshAttendance(); });
+
+      $('perm-cancel').addEventListener('click', closePermModal);
+      $('perm-save').addEventListener('click', savePermsFromModal);
+
+      // refresh sticky headers offset on resize (improve positioning)
+      window.addEventListener('resize', () => {
+        // compute a safe top offset based on header height + top padding
+        const headerRect = document.querySelector('header')?.getBoundingClientRect();
+        const topOffset = (headerRect ? Math.ceil(headerRect.height) : 86) + 18; // header + page padding
+        document.querySelectorAll('thead th').forEach(th => th.style.top = (topOffset)+"px");
+      });
+
+      // interval to update rollcall marked states
+      setInterval(updateRollcallMarkedStates, 60_000);
+
+      if (state.session) enterApp();
+    }
+
+    init();
+  </script>
+</body>
+</html>
